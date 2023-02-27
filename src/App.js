@@ -7,16 +7,20 @@ function App() {
   const [day,setDay] = useState([{day:'Monday',toggle:true},{day:'Tuesday',toggle:true},{day:'Wednesday',toggle:true},{day:'Thursday',toggle:true},{day:'Friday',toggle:true},{day:'Saturday',toggle:true},{day:'Sunday',toggle:true}])
   const [data,setData] = useState(datTime)
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [presentDay,setPresentDay] = useState('')
   
   const [input,setInput] = useState({
-    startTime:'',
-    endTime:'',
+    startTimeHour:'',
+    startTimeMin:'',
+    endTimeHour:'',
+    endTimeMin:"",
     endDay:'',
     startDay:''
   })
-  const {startTime,startDay,endTime,endDay} = input
+  const {startTimeHour,startTimeMin,startDay,endTimeHour,endTimeMin,endDay} = input
 
   const showModal = (day) => {
+    setPresentDay(day)
     setIsModalOpen(true);
     setInput({
       ...input,
@@ -28,10 +32,13 @@ function App() {
     setIsModalOpen(false);
   };
   const handleCancel = () => {
+    setPresentDay('')
     setIsModalOpen(false);
     setInput({
-      startTime:'',
-      endTime:'',
+      startTimeHour:'',
+      startTimeMin:'',
+      endTimeHour:'',
+      endTimeMin:"",
       endDay:'',
       startDay:''
     })
@@ -46,32 +53,93 @@ function App() {
   }
 
 
+
+
   function handleAddTime(){
-    if(startTime && startDay && endTime && endDay){
+    if(startTimeHour && startTimeMin && startDay && endTimeHour && endTimeMin && endDay){
       let newArry = [...data]
 
-      newArry.push({'_id':Math.random(),'timeSlots':[{
-        "startsAt": {
-            "day": startDay,
-            "time": startTime,
-        },
-        "endsAt": {
-            "day": endDay,
-            "time": endTime
-        },
-        "_id": Math.random()
-    }]})
-  
-    setData(newArry)
+      let inputValid = []
+      let startTimeArr = []
+      let endTimeArr = []
 
-    setInput({
-      startTime:'',
-      endTime:'',
-      endDay:'',
-      startDay:''
-    })
+      newArry.map(f=>{
+      
+         f.timeSlots.map(r=>{
+          r.startsAt.day == startDay && inputValid.push({'startTimeArr':r.startsAt.time.split(':')[0],'endTimeArr':r.endsAt.time.split(':')[0],startDay:r.startsAt.day,endDay:r.endsAt.day}) 
+         })
+        })
+    
+console.log(inputValid)
 
-    setIsModalOpen(false);
+        let numIncludes = []
+
+      inputValid.map(f=>{
+          if(Number(f.startTimeArr)<Number(f.endTimeArr)){
+            for(let i=Number(f.startTimeArr);i<=Number(f.endTimeArr);i++){
+              numIncludes.push(i)
+              
+            }
+          }else if(Number(f.startTimeArr)>Number(f.endTimeArr)){
+          
+            if(f.startDay==f.endDay){
+              for(let i=Number(f.endTimeArr);i>=Number(f.startTimeArr);i--){
+                numIncludes.push(i)
+                // console.log(i)
+              }
+         
+            }else if(f.startDay!==f.endDay){
+              for(let i=Number(f.startTimeArr);i<=24;i++){
+                numIncludes.push(i)
+            
+              }
+            }
+           
+          }
+          
+        })
+
+        console.log(numIncludes)
+
+        
+
+        if(!numIncludes.includes(Number(startTimeHour.split(':')[0])) && !numIncludes.includes(Number(endTimeMin.split(':')[0]))){
+                            
+          console.log(inputValid)
+
+          newArry.push({'_id':Math.random(),'timeSlots':[{
+            "startsAt": {
+                "day": startDay,
+                "time": `${startTimeHour}:${startTimeMin}`,
+            },
+            "endsAt": {
+                "day": endDay,
+                "time": `${endTimeHour}:${endTimeMin}`,
+            },
+            "_id": Math.random()
+          }]})
+
+
+
+          setData(newArry)
+
+          setInput({
+          startTimeHour:'',
+          startTimeMin:'',
+          endTimeHour:'',
+          endTimeMin:"",
+          endDay:'',
+          startDay:''
+          })
+
+          console.log(input)
+
+          setIsModalOpen(false);
+        }else{
+          alert('Timing is alredy booked')
+        }
+
+
     }else{
       alert('Please fill all details')
     }
@@ -104,7 +172,6 @@ function App() {
     setDay(newArry)
   }
 
-  // console.log(data)
   return (
     <div className="container">
      <table class="table table-borderless">
@@ -150,16 +217,57 @@ function App() {
     <Modal title="Basic Modal" open={isModalOpen} onOk={handleOk} onCancel={handleCancel} footer={null}>
     <div className='container'>
           <label htmlFor="">Star Time</label>
-          <input type="text" id='startTime' value={startTime} onChange={handleChange}  className='form-control'/>
+          <div class=" text-center">
+                <div class="row">
+                  <div class="col">
+                   <select name="" id="startTimeHour" value={startTimeHour} onChange={handleChange} className='form-control'>
+                   {Array(25).fill('').map((d,iSelec)=>(
+                     <option value={iSelec >=10 ? iSelec : '0'+iSelec}>{iSelec >=10 ? iSelec : '0'+iSelec}</option>
+                   ))}
+                   </select>
+                  </div>:
+                  <div class="col">
+                  <select name="" id="startTimeMin" value={startTimeMin} onChange={handleChange} className='form-control'>
+                  {Array(60).fill('').map((d,iSelec)=>(
+                     <option value={iSelec >=10 ? iSelec : '0'+iSelec}>{iSelec >=10 ? iSelec : '0'+iSelec}</option>
+                   ))}
+                   </select>
+                  </div>
+                </div>
+              </div>
           <label htmlFor="">End Day</label>
           <select class="form-select" id='endDay' value={endDay} onChange={handleChange} aria-label="Default select example">
-            {day.map(o=>(
-               <option value={o.day}>{o.day}</option>
-            ))}
+            {presentDay == 'Saturday' ? (day.slice(5).concat(day.slice(0,5)).map((o,indexDay)=>(
+                <option value={o.day}>{o.day}</option> 
+       
+            ))) :presentDay == 'Sunday' ? (day.slice(6).concat(day.slice(0,6)).map((o,indexDay)=>(
+              <option value={o.day}>{o.day}</option> 
+          ))) : day.map((o,indexDay)=>(
+            <>
+              {day.findIndex(b=>b.day == presentDay) <= indexDay ?   <option value={o.day}>{o.day}</option> : ''} 
+              </>
+          ))}
         </select>
           <label htmlFor="">End Time</label>
         
-          <input type="text" id='endTime' value={endTime} onChange={handleChange} className='form-control'/>
+          <div class=" text-center">
+                <div class="row">
+                  <div class="col">
+                   <select name="" id="endTimeHour" value={endTimeHour} className='form-control' onChange={handleChange}>
+                   {Array(25).fill('').map((d,iSelec)=>(
+                     <option value={iSelec >=10 ? iSelec : '0'+iSelec}>{iSelec >=10 ? iSelec : '0'+iSelec}</option>
+                   ))}
+                   </select>
+                  </div>:
+                  <div class="col">
+                  <select name="" id="endTimeMin" value={endTimeMin}  className='form-control' onChange={handleChange}>
+                  {Array(60).fill('').map((d,iSelec)=>(
+                     <option value={iSelec >=10 ? iSelec : '0'+iSelec}>{iSelec >=10 ? iSelec : '0'+iSelec}</option>
+                   ))}
+                   </select>
+                  </div>
+                </div>
+              </div>
           <button className='btn btn-success mt-3' onClick={()=>handleAddTime()}>Add</button>
          </div>
     </Modal></td>  </>)}
